@@ -19,7 +19,7 @@
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
-            <a class="navbar-brand" href="#">Perpustakaan KABASA</a>
+            <a class="navbar-brand" href="/">Perpustakaan KABASA</a>
             <div class="collapse navbar-collapse">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
@@ -38,6 +38,7 @@
     
     <div class="container my-4">
         
+        @include('alert')
         @yield('content')
         
     </div>

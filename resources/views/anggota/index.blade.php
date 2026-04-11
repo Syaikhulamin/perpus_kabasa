@@ -7,8 +7,6 @@
     <a href="{{ route('anggota.create') }}" class="btn btn-primary">Tambah Anggota</a>
     <br><br>
 
-    @include('alert')
-
     <table class="table table-striped">
         <thead class="table-dark">
             <tr>
