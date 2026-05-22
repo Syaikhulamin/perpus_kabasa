@@ -10,11 +10,20 @@ class AnggotaController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $data = Anggota::orderby('created_at', 'desc')->get();
 
-        return view('anggota/index')->with(['anggotas' => $data]);
+        $search = $request->get('search');
+
+        if ($search) {
+            $data = Anggota::where('nama', 'like', '%' . $search . '%')
+                ->orderby('created_at', 'desc')
+                ->simplePaginate(5);
+        } else {
+            $data = Anggota::orderby('created_at', 'desc')->simplePaginate(5);
+        }
+
+        return view('anggota/index')->with(['anggotas' => $data, 'search' => $search]);
     }
 
     /**
@@ -30,11 +39,28 @@ class AnggotaController extends Controller
      */
     public function store(Request $request)
     {
+        $validated = $request->validate([
+            'nama' => 'required|string|max:255',
+            'kelas' => 'required|in:Kelas X,Kelas XI,Kelas XII',
+            'alamat' => 'required|string|max:255',
+            'no_hp' => 'required|numeric|digits_between:10,13',
+        ], [
+            'nama.required' => 'Nama harus diisi',
+            'nama.max' => 'Nama maksimal 255 karakter',
+            'kelas.required' => 'Kelas harus diisi',
+            'kelas.in' => 'Pilih kelas yang valid',
+            'alamat.required' => 'Alamat harus diisi',
+            'alamat.max' => 'Alamat maksimal 255 karakter',
+            'no_hp.required' => 'Nomor HP harus diisi',
+            'no_hp.numeric' => 'Nomor HP harus berupa angka',
+            'no_hp.digits_between' => 'Nomor HP harus 10-13 digit',
+        ]);
+
         $data = new Anggota;
-        $data->nama = $request->nama;
-        $data->kelas = $request->kelas;
-        $data->alamat = $request->alamat;
-        $data->no_hp = $request->no_hp;
+        $data->nama = $validated['nama'];
+        $data->kelas = $validated['kelas'];
+        $data->alamat = $validated['alamat'];
+        $data->no_hp = $validated['no_hp'];
         $data->save();
 
         return redirect()->route('anggota.index')->with('success', 'Data berhasil ditambahkan!');
@@ -63,13 +89,24 @@ class AnggotaController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        Anggota::where('id_anggota', $id)
-        ->update([
-            'nama' => $request->nama,
-            'kelas' => $request->kelas,
-            'alamat' => $request->alamat,
-            'no_hp' => $request->no_hp,
+        $validated = $request->validate([
+            'nama' => 'required|string|max:255',
+            'kelas' => 'required|in:Kelas X,Kelas XI,Kelas XII',
+            'alamat' => 'required|string|max:255',
+            'no_hp' => 'required|numeric|digits_between:10,13',
+        ], [
+            'nama.required' => 'Nama harus diisi',
+            'nama.max' => 'Nama maksimal 255 karakter',
+            'kelas.required' => 'Kelas harus diisi',
+            'kelas.in' => 'Pilih kelas yang valid',
+            'alamat.required' => 'Alamat harus diisi',
+            'alamat.max' => 'Alamat maksimal 255 karakter',
+            'no_hp.required' => 'Nomor HP harus diisi',
+            'no_hp.numeric' => 'Nomor HP harus berupa angka',
+            'no_hp.digits_between' => 'Nomor HP harus 10-13 digit',
         ]);
+
+        Anggota::where('id_anggota', $id)->update($validated);
 
         return redirect()->route('anggota.index')->with('success', 'Data berhasil diubah!');
     }

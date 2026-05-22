@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Buku;
+use App\Models\Anggota;
+use App\Models\Peminjaman;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
@@ -11,7 +14,26 @@ class DashboardController extends Controller
      */
     public function index()
     {
-        return view('dashboard');
+        $totalBuku = Buku::count();
+        $totalAnggota = Anggota::count();
+        $totalPeminjaman = Peminjaman::count();
+        $peminjamanAktif = Peminjaman::where('status', 'Dipinjam')->count();
+        $peminjamanTerlambat = Peminjaman::where('status', 'Kembali Terlambat')->count();
+
+        // Data peminjaman terbaru
+        $peminjamanTerbaru = Peminjaman::with(['anggota', 'buku'])
+            ->orderBy('created_at', 'desc')
+            ->limit(5)
+            ->get();
+
+        return view('index', [
+            'totalBuku' => $totalBuku,
+            'totalAnggota' => $totalAnggota,
+            'totalPeminjaman' => $totalPeminjaman,
+            'peminjamanAktif' => $peminjamanAktif,
+            'peminjamanTerlambat' => $peminjamanTerlambat,
+            'peminjamanTerbaru' => $peminjamanTerbaru,
+        ]);
     }
 
     /**

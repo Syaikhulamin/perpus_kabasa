@@ -13,11 +13,21 @@ class PeminjamanController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $peminjaman = Peminjaman::with(['anggota', 'buku'])->get();
+        $search = $request->get('search');
 
-        return view('peminjaman/index')->with(['peminjaman' => $peminjaman]);
+        if ($search) {
+
+            $peminjaman = Peminjaman::with(['anggota', 'buku'])
+                ->whereHas('anggota', fn($q) => $q->where('nama', 'like', '%' . $search . '%'))
+                ->orderBy('created_at', 'desc')
+                ->simplePaginate(5);
+        } else {
+            $peminjaman = Peminjaman::with(['anggota', 'buku'])->orderBy('created_at', 'desc')->simplePaginate(5);
+        }
+
+        return view('peminjaman/index')->with(['peminjamans' => $peminjaman, 'search' => $search]);
     }
 
     /**
@@ -37,23 +47,29 @@ class PeminjamanController extends Controller
      */
     public function store(Request $request)
     {
+        $validated = $request->validate([
+            'id_anggota' => 'required|exists:anggotas,id_anggota',
+            'id_buku' => 'required|exists:bukus,id_buku',
+            'tanggal_kembali' => 'required|date|after_or_equal:today',
+        ], [
+            'id_anggota.required' => 'Anggota harus dipilih',
+            'id_anggota.exists' => 'Anggota tidak ditemukan',
+            'id_buku.required' => 'Buku harus dipilih',
+            'id_buku.exists' => 'Buku tidak ditemukan',
+            'tanggal_kembali.required' => 'Tanggal kembali harus diisi',
+            'tanggal_kembali.date' => 'Format tanggal kembali tidak valid',
+            'tanggal_kembali.after_or_equal' => 'Tanggal kembali tidak boleh kurang dari hari ini',
+        ]);
+
         Peminjaman::create([
-            'id_anggota' => $request->id_anggota,
-            'id_buku' => $request->id_buku,
+            'id_anggota' => $validated['id_anggota'],
+            'id_buku' => $validated['id_buku'],
             'tanggal_pinjam' => date('Y-m-d'),
-            'tanggal_kembali' => $request->tanggal_kembali,
+            'tanggal_kembali' => $validated['tanggal_kembali'],
             'status' => 'Dipinjam',
         ]);
 
         return redirect()->route('peminjaman.index')->with('success', 'Data berhasil ditambahkan!');
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
     }
 
     /**
@@ -66,22 +82,36 @@ class PeminjamanController extends Controller
         $anggota = Anggota::all();
         $data = Peminjaman::where('id_peminjaman', $id)->first();
 
-        return view('peminjaman/edit')->with(['peminjaman' => $data , 'buku' => $buku , 'anggota' => $anggota]);
+        return view('peminjaman/edit')->with(['peminjaman' => $data, 'buku' => $buku, 'anggota' => $anggota]);
     }
 
     /**
      * Update the specified resource in storage.
      */
 
-    public function update(Request $request, string $id){
-        Peminjaman::where('id_peminjaman', $id)
-        ->update([
-            'id_buku' => $request->id_buku,
-            'id_anggota' => $request->id_anggota,
-            'tanggal_pinjam' => $request->tanggal_kembali,
-            'tanggal_kembali' => $request->tanggal_kembali,
-            'status' => $request->status,
+    public function update(Request $request, string $id)
+    {
+        $validated = $request->validate([
+            'id_anggota' => 'required|exists:anggotas,id_anggota',
+            'id_buku' => 'required|exists:bukus,id_buku',
+            'tanggal_pinjam' => 'required|date',
+            'tanggal_kembali' => 'required|date|after_or_equal:tanggal_pinjam',
+            'status' => 'required|in:Dipinjam,Kembali,Kembali Terlambat',
+        ], [
+            'id_anggota.required' => 'Anggota harus dipilih',
+            'id_anggota.exists' => 'Anggota tidak ditemukan',
+            'id_buku.required' => 'Buku harus dipilih',
+            'id_buku.exists' => 'Buku tidak ditemukan',
+            'tanggal_pinjam.required' => 'Tanggal pinjam harus diisi',
+            'tanggal_pinjam.date' => 'Format tanggal pinjam tidak valid',
+            'tanggal_kembali.required' => 'Tanggal kembali harus diisi',
+            'tanggal_kembali.date' => 'Format tanggal kembali tidak valid',
+            'tanggal_kembali.after_or_equal' => 'Tanggal kembali harus lebih besar atau sama dengan tanggal pinjam',
+            'status.required' => 'Status harus dipilih',
+            'status.in' => 'Status tidak valid',
         ]);
+
+        Peminjaman::where('id_peminjaman', $id)->update($validated);
 
         return redirect()->route('peminjaman.index')->with('success', 'Data berhasil diubah!');
     }
@@ -90,16 +120,16 @@ class PeminjamanController extends Controller
     {
         $data = Peminjaman::where('id_peminjaman', $id)->first();
 
-        if($data->tanggal_kembali < date('Y-m-d')){
+        if ($data->tanggal_kembali < date('Y-m-d')) {
             $status = 'Kembali Terlambat';
-        }else{
+        } else {
             $status = 'Kembali';
         }
 
         Peminjaman::where('id_peminjaman', $id)
-        ->update([
-            'status' => $status,
-        ]);
+            ->update([
+                'status' => $status,
+            ]);
 
         return redirect()->route('peminjaman.index')->with('success', 'Data berhasil diubah!');
     }
