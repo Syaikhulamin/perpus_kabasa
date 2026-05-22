@@ -29,6 +29,7 @@
         });
     </script>
 
+
     <!-- CSS Files -->
     <link rel="stylesheet" href="{{ asset('') }}assets/css/bootstrap.min.css" />
     <link rel="stylesheet" href="{{ asset('') }}assets/css/plugins.min.css" />
@@ -127,6 +128,36 @@
     <!-- Kaiadmin DEMO methods, don't include it in your project! -->
     <script src="{{ asset('') }}assets/js/setting-demo.js"></script>
     <script src="{{ asset('') }}assets/js/demo.js"></script>
+
+    <script>
+        @if (session('success'))
+            $.notify({
+                icon: 'icon-check',
+                message: '{{ session('success') }}',
+            }, {
+                type: 'success',
+                placement: {
+                    from: "bottom",
+                    align: "right"
+                },
+                time: 3000,
+            });
+        @endif
+
+        @if (session('error'))
+            $.notify({
+                icon: 'icon-close',
+                message: '{{ session('error') }}',
+            }, {
+                type: 'danger',
+                placement: {
+                    from: "bottom",
+                    align: "right"
+                },
+                time: 3000,
+            });
+        @endif
+    </script>
 </body>
 
 </html>
